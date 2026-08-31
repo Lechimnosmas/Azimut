@@ -202,6 +202,24 @@ button:hover {
     white-space: nowrap;
 }
 
+/* =========================================================
+   MODE SUIVRE L'IPHONE — rotation de la carte
+   Le nord vrai de la carte tourne afin que la direction
+   de visée physique de l'iPhone soit toujours vers le haut.
+   ========================================================= */
+#map .leaflet-map-pane {
+    transform-origin: 50% 50% !important;
+    will-change: transform;
+}
+
+#map.mode-suivi {
+    overflow: hidden;
+}
+
+#map.mode-suivi .leaflet-map-pane {
+    transition: transform 0.12s linear;
+}
+
 </style>
 
 </head>
@@ -415,6 +433,49 @@ let declinaison = null;
 let precisionBoussole = null;
 let dernierePositionDeclinaison = null;
 
+let rotationCarte = 0;
+let rotationCarteObserver = null;
+
+function appliquerRotationCarte(angle) {
+    rotationCarte = normaliserAngle(angle);
+    const pane = map.getPanes().mapPane;
+    if (!pane) return;
+
+    const transform = pane.style.transform || '';
+    const sansRotation = transform.replace(/\s*rotate\([^)]*\)/g, '').trim();
+    pane.style.transform = `${sansRotation} rotate(${-rotationCarte}deg)`;
+}
+
+function installerSuiviRotationCarte() {
+    if (rotationCarteObserver) return;
+    const pane = map.getPanes().mapPane;
+    if (!pane) return;
+
+    rotationCarteObserver = new MutationObserver(() => {
+        if (!boussoleActive) return;
+        const transform = pane.style.transform || '';
+        if (!/rotate\(/.test(transform)) {
+            const sansRotation = transform.trim();
+            pane.style.transform = `${sansRotation} rotate(${-rotationCarte}deg)`;
+        }
+    });
+
+    rotationCarteObserver.observe(pane, { attributes: true, attributeFilter: ['style'] });
+}
+
+function arreterSuiviRotationCarte() {
+    if (rotationCarteObserver) {
+        rotationCarteObserver.disconnect();
+        rotationCarteObserver = null;
+    }
+    const pane = map.getPanes().mapPane;
+    if (pane) {
+        const transform = pane.style.transform || '';
+        pane.style.transform = transform.replace(/\s*rotate\([^)]*\)/g, '').trim();
+    }
+    document.getElementById('map')?.classList.remove('mode-suivi');
+}
+
 function normaliserAngle(angle) {
     return (angle % 360 + 360) % 360;
 }
@@ -475,6 +536,7 @@ function afficherEtatBoussole() {
 async function activerBoussole() {
     if (boussoleActive) {
         boussoleActive = false;
+        arreterSuiviRotationCarte();
         window.removeEventListener("deviceorientation", gererOrientation);
         window.removeEventListener("deviceorientationabsolute", gererOrientation);
         afficherEtatBoussole();
@@ -503,6 +565,8 @@ async function activerBoussole() {
         }
 
         boussoleActive = true;
+        document.getElementById('map')?.classList.add('mode-suivi');
+        installerSuiviRotationCarte();
         window.addEventListener("deviceorientation", gererOrientation, true);
         window.addEventListener("deviceorientationabsolute", gererOrientation, true);
         afficherEtatBoussole();
@@ -533,6 +597,15 @@ function gererOrientation(event) {
     } else {
         capVrai = capMagnetique;
     }
+
+    /*
+       La carte est tournée de -capVrai :
+       si l'iPhone pointe à 90° vrai (Est), la carte tourne
+       de -90° et l'Est se retrouve vers le haut de l'écran.
+       La ligne de visée du rapporteur correspond alors
+       exactement à la direction physique de l'iPhone.
+    */
+    appliquerRotationCarte(capVrai);
 
     afficherEtatBoussole();
 
