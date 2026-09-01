@@ -194,6 +194,34 @@ button:hover {
     cursor: pointer;
 }
 .compass-control button.actif { background: #16803c; }
+.visee-control {
+    background: rgba(255,255,255,0.96);
+    border-radius: 10px;
+    padding: 7px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    border: 1px solid rgba(0,0,0,0.15);
+    margin-top: 6px;
+}
+.visee-control button {
+    margin: 0;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 7px;
+    background: #174ea6;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.visee-control button.verrouille { background: #7b1fa2; }
+.visee-readout {
+    margin-top: 5px;
+    font-size: 11px;
+    text-align: center;
+    color: #444;
+    white-space: nowrap;
+    line-height: 1.35;
+}
 .heading-readout {
     margin-top: 5px;
     font-size: 11px;
@@ -203,22 +231,8 @@ button:hover {
 }
 
 /* =========================================================
-   MODE SUIVRE L'IPHONE — rotation de la carte
-   Le nord vrai de la carte tourne afin que la direction
-   de visée physique de l'iPhone soit toujours vers le haut.
+   LIGNE DE VISÉE — la carte reste toujours fixe
    ========================================================= */
-#map .leaflet-map-pane {
-    transform-origin: 50% 50% !important;
-    will-change: transform;
-}
-
-#map.mode-suivi {
-    overflow: hidden;
-}
-
-#map.mode-suivi .leaflet-map-pane {
-    transition: transform 0.12s linear;
-}
 
 </style>
 
@@ -240,8 +254,18 @@ Recherche de votre position GPS...
 <div class="results">
 
 <div>
-<div class="label">Azimut A → B</div>
+<div class="label">Azimut carte (A → B)</div>
 <div class="value" id="azimut">—</div>
+</div>
+
+<div id="compassValues" style="display:none;">
+<div class="label">Azimut boussole (déclinaison incluse)</div>
+<div class="value" id="azimutBoussole">—</div>
+</div>
+
+<div id="differenceValue" style="display:none;">
+<div class="label">Différence</div>
+<div class="value" id="differenceAzimut">—</div>
 </div>
 
 <div>
@@ -278,6 +302,10 @@ Recherche de votre position GPS...
 
 <button id="compassButton" onclick="activerBoussole()">
 🧭 Suivre l’iPhone
+</button>
+
+<button id="lockButton" onclick="verrouillerVisee()" style="display:none;">
+🔒 Verrouiller la visée
 </button>
 
 </div>
@@ -433,48 +461,11 @@ let declinaison = null;
 let precisionBoussole = null;
 let dernierePositionDeclinaison = null;
 
-let rotationCarte = 0;
-let rotationCarteObserver = null;
-
-function appliquerRotationCarte(angle) {
-    rotationCarte = normaliserAngle(angle);
-    const pane = map.getPanes().mapPane;
-    if (!pane) return;
-
-    const transform = pane.style.transform || '';
-    const sansRotation = transform.replace(/\s*rotate\([^)]*\)/g, '').trim();
-    pane.style.transform = `${sansRotation} rotate(${-rotationCarte}deg)`;
-}
-
-function installerSuiviRotationCarte() {
-    if (rotationCarteObserver) return;
-    const pane = map.getPanes().mapPane;
-    if (!pane) return;
-
-    rotationCarteObserver = new MutationObserver(() => {
-        if (!boussoleActive) return;
-        const transform = pane.style.transform || '';
-        if (!/rotate\(/.test(transform)) {
-            const sansRotation = transform.trim();
-            pane.style.transform = `${sansRotation} rotate(${-rotationCarte}deg)`;
-        }
-    });
-
-    rotationCarteObserver.observe(pane, { attributes: true, attributeFilter: ['style'] });
-}
-
-function arreterSuiviRotationCarte() {
-    if (rotationCarteObserver) {
-        rotationCarteObserver.disconnect();
-        rotationCarteObserver = null;
-    }
-    const pane = map.getPanes().mapPane;
-    if (pane) {
-        const transform = pane.style.transform || '';
-        pane.style.transform = transform.replace(/\s*rotate\([^)]*\)/g, '').trim();
-    }
-    document.getElementById('map')?.classList.remove('mode-suivi');
-}
+/* Ligne de visée indépendante du rapporteur. La carte ne bouge jamais. */
+let ligneVisee = null;
+let viseeVerrouillee = false;
+let azimutViseeMagnetique = null;
+let azimutViseeGeographique = null;
 
 function normaliserAngle(angle) {
     return (angle % 360 + 360) % 360;
@@ -514,8 +505,9 @@ async function mettreAJourDeclinaison(lat, lon) {
 function afficherEtatBoussole() {
     const btn = document.getElementById("compassButton");
     if (!btn) return;
+
     btn.classList.toggle("actif", boussoleActive);
-    btn.innerHTML = boussoleActive ? "🧭 Boussole active" : "🧭 Suivre l’iPhone";
+    btn.innerHTML = boussoleActive ? "🧭 Suivre l’iPhone — actif" : "🧭 Suivre l’iPhone";
 
     let r = document.getElementById("headingReadout");
     if (!r) {
@@ -524,28 +516,92 @@ function afficherEtatBoussole() {
         r.className = "heading-readout";
         btn.parentElement.appendChild(r);
     }
-    if (!boussoleActive || capVrai === null) {
+
+    if (!boussoleActive || capMagnetique === null) {
         r.innerHTML = "";
         return;
     }
+
     const dec = declinaison === null ? "—" : `${declinaison >= 0 ? "+" : ""}${declinaison.toFixed(1)}°`;
     const acc = precisionBoussole === null ? "" : ` · ±${precisionBoussole.toFixed(0)}°`;
-    r.innerHTML = `Vrai&nbsp; ${capVrai.toFixed(1)}°<br>Déclinaison&nbsp; ${dec}${acc}`;
+    const diffCarte = (A && B && capVrai !== null)
+        ? angleSigne(capVrai - calculerAzimutValeur(A, B))
+        : null;
+
+    r.innerHTML =
+        `Magnétique&nbsp; ${capMagnetique.toFixed(1)}°<br>` +
+        `Azimut boussole&nbsp; ${capVrai === null ? "—" : capVrai.toFixed(1) + "°"}<br>` +
+        `Déclinaison&nbsp; ${dec}` + acc +
+        `<br>Différence carte&nbsp; ${diffCarte === null ? "—" : (diffCarte >= 0 ? "+" : "") + diffCarte.toFixed(1) + "°"}`;
+}
+
+function mettreAJourLigneVisee() {
+    if (!boussoleActive || A === null || capVrai === null) return;
+    if (viseeVerrouillee) return;
+
+    const distance = Math.max(calculerRayon() * 1.35, 100);
+    const fin = destination(A, capVrai, distance);
+
+    if (!ligneVisee) {
+        ligneVisee = L.polyline(
+            [A, fin],
+            { color: "#0066ff", weight: 5, opacity: 0.95, interactive: false }
+        ).addTo(map);
+    } else {
+        ligneVisee.setLatLngs([A, fin]);
+    }
+
+    azimutViseeMagnetique = capMagnetique;
+    azimutViseeGeographique = capVrai;
+
+    const diff = declinaison === null ? null : declinaison;
+    let vr = document.getElementById("viseeReadout");
+    if (!vr) {
+        vr = document.createElement("div");
+        vr.id = "viseeReadout";
+        vr.className = "visee-readout";
+        document.getElementById("lockButton")?.parentElement?.appendChild(vr);
+    }
+    vr.innerHTML =
+        `Visée&nbsp; ${capVrai.toFixed(1)}° vrai<br>` +
+        `Boussole&nbsp; ${capMagnetique.toFixed(1)}°` +
+        (diff === null ? "" : ` · Diff. ${diff >= 0 ? "+" : ""}${diff.toFixed(1)}°`);
+}
+
+function verrouillerVisee() {
+    if (!boussoleActive || !ligneVisee || capVrai === null) return;
+
+    viseeVerrouillee = !viseeVerrouillee;
+
+    const btn = document.getElementById("lockButton");
+    if (btn) {
+        btn.classList.toggle("verrouille", viseeVerrouillee);
+        btn.innerHTML = viseeVerrouillee ? "🔓 Déverrouiller la visée" : "🔒 Verrouiller la visée";
+    }
+
+    const vr = document.getElementById("viseeReadout");
+    if (vr && viseeVerrouillee) vr.innerHTML += "<br><b>🔒 Visée verrouillée</b>";
 }
 
 async function activerBoussole() {
     if (boussoleActive) {
         boussoleActive = false;
-        arreterSuiviRotationCarte();
+        viseeVerrouillee = false;
+        if (ligneVisee) { map.removeLayer(ligneVisee); ligneVisee = null; }
+        azimutViseeMagnetique = null;
+        azimutViseeGeographique = null;
         window.removeEventListener("deviceorientation", gererOrientation);
         window.removeEventListener("deviceorientationabsolute", gererOrientation);
+        const lock = document.getElementById("lockButton");
+        if (lock) lock.style.display = "none";
+        const vr = document.getElementById("viseeReadout");
+        if (vr) vr.remove();
         afficherEtatBoussole();
         if (A && B) calculerAzimut(A, B);
         else if (!A) {
             document.getElementById("azimut").innerHTML = "—";
             document.getElementById("direction").innerHTML = "—";
         }
-        if (A) dessinerRapporteur();
         return;
     }
 
@@ -565,12 +621,16 @@ async function activerBoussole() {
         }
 
         boussoleActive = true;
-        document.getElementById('map')?.classList.add('mode-suivi');
-        installerSuiviRotationCarte();
+        viseeVerrouillee = false;
+        const lock = document.getElementById("lockButton");
+        if (lock) {
+            lock.style.display = "inline-block";
+            lock.classList.remove("verrouille");
+            lock.innerHTML = "🔒 Verrouiller la visée";
+        }
         window.addEventListener("deviceorientation", gererOrientation, true);
         window.addEventListener("deviceorientationabsolute", gererOrientation, true);
         afficherEtatBoussole();
-        if (A) dessinerRapporteur();
     } catch (e) {
         alert("Impossible d’activer la boussole sur cet appareil/navigateur.");
     }
@@ -578,8 +638,8 @@ async function activerBoussole() {
 
 function gererOrientation(event) {
     if (!boussoleActive) return;
-    let heading = event.webkitCompassHeading;
 
+    let heading = event.webkitCompassHeading;
     if (typeof heading !== "number" || heading < 0) {
         if (event.absolute && typeof event.alpha === "number") {
             heading = normaliserAngle(360 - event.alpha);
@@ -592,32 +652,39 @@ function gererOrientation(event) {
     precisionBoussole = typeof event.webkitCompassAccuracy === "number" && event.webkitCompassAccuracy >= 0
         ? event.webkitCompassAccuracy : null;
 
+    // L'azimut boussole affiché et la ligne de visée doivent toujours
+    // inclure la déclinaison magnétique. Tant qu'elle n'est pas disponible,
+    // on n'affiche donc pas un faux azimut "corrigé".
     if (declinaison !== null) {
         capVrai = normaliserAngle(capMagnetique + declinaison);
     } else {
-        capVrai = capMagnetique;
+        capVrai = null;
     }
-
-    /*
-       La carte est tournée de -capVrai :
-       si l'iPhone pointe à 90° vrai (Est), la carte tourne
-       de -90° et l'Est se retrouve vers le haut de l'écran.
-       La ligne de visée du rapporteur correspond alors
-       exactement à la direction physique de l'iPhone.
-    */
-    appliquerRotationCarte(capVrai);
 
     afficherEtatBoussole();
 
-    if (boussoleActive && capVrai !== null) {
-        document.getElementById("azimut").innerHTML =
-            capVrai.toFixed(4) + "°<br><small>Azimut vrai de l’iPhone</small>";
-        document.getElementById("direction").innerHTML = directionDepuisAzimut(capVrai);
-    } else if (A && B) {
-        calculerAzimut(A, B);
-    }
+    if (A && capVrai !== null) {
+        if (!viseeVerrouillee) mettreAJourLigneVisee();
 
-    if (A) dessinerRapporteur();
+        // L'azimut carte reste la référence A → B.
+        // L'azimut boussole est toujours corrigé par la déclinaison magnétique.
+        const azimutCarte = calculerAzimutValeur(A, B);
+        const difference = azimutCarte === null ? null : angleSigne(capVrai - azimutCarte);
+
+        document.getElementById("azimutBoussole").innerHTML =
+            capVrai.toFixed(4) + "°";
+        document.getElementById("differenceAzimut").innerHTML =
+            difference === null ? "—" : (difference >= 0 ? "+" : "") + difference.toFixed(4) + "°";
+
+        document.getElementById("compassValues").style.display = "block";
+        document.getElementById("differenceValue").style.display = "block";
+
+        // En mode suivi, la direction affichée correspond à la visée de l'iPhone.
+        document.getElementById("direction").innerHTML = directionDepuisAzimut(capVrai);
+
+        const lock = document.getElementById("lockButton");
+        if (lock) lock.style.display = "inline-block";
+    }
 }
 
 function directionDepuisAzimut(azimut) {
@@ -1082,6 +1149,14 @@ function creerRapporteur() {
             rapporteur
         );
 
+    if (ligneVisee) {
+        map.removeLayer(ligneVisee);
+        ligneVisee = null;
+    }
+
+    if (ligneVisee)
+        map.removeLayer(ligneVisee);
+
 
     rapporteur =
         L.layerGroup()
@@ -1253,8 +1328,6 @@ function dessinerRapporteur() {
 
     /* Graduations */
 
-    /* En mode boussole, le 0° du rapporteur suit le cap vrai de l’iPhone. */
-    const rotationBoussole = boussoleActive && capVrai !== null ? capVrai : 0;
 
     for (
         let angle = 0;
@@ -1286,7 +1359,7 @@ function dessinerRapporteur() {
         const exterieur =
             destination(
                 A,
-                normaliserAngle(angle + rotationBoussole),
+                angle,
                 rayonMetres
             );
 
@@ -1301,7 +1374,7 @@ function dessinerRapporteur() {
         const interieur =
             destination(
                 A,
-                normaliserAngle(angle + rotationBoussole),
+                angle,
                 rayonInterieur
             );
 
@@ -1337,7 +1410,7 @@ function dessinerRapporteur() {
             const labelPoint =
                 destination(
                     A,
-                    normaliserAngle(angle + rotationBoussole),
+                    angle,
                     rayonMetres * 1.12
                 );
 
@@ -1441,7 +1514,7 @@ function ajouterCardinal(
     const position =
         destination(
             A,
-            normaliserAngle(angle + (boussoleActive && capVrai !== null ? capVrai : 0)),
+            angle,
             calculerRayon() *
             1.20
         );
@@ -1572,6 +1645,28 @@ map.on(
 /* =========================================================
    CALCUL DE L'AZIMUT
    ========================================================= */
+
+function angleSigne(angle) {
+    let a = normaliserAngle(angle);
+    if (a > 180) a -= 360;
+    return a;
+}
+
+function calculerAzimutValeur(A, B) {
+    if (!A || !B) return null;
+
+    const rad = Math.PI / 180;
+    const deg = 180 / Math.PI;
+    const lat1 = A.lat * rad;
+    const lat2 = B.lat * rad;
+    const deltaLon = (B.lng - A.lng) * rad;
+
+    const y = Math.sin(deltaLon) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) -
+              Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLon);
+
+    return normaliserAngle(Math.atan2(y, x) * deg);
+}
 
 function calculerAzimut(
     A,
@@ -1737,6 +1832,17 @@ function calculerAzimut(
         "direction"
     ).innerHTML =
         direction;
+
+    // En mode boussole, conserver l'azimut carte et calculer l'écart avec
+    // l'azimut boussole corrigé de la déclinaison magnétique.
+    if (boussoleActive && capVrai !== null) {
+        const diff = angleSigne(capVrai - azimut);
+        document.getElementById("azimutBoussole").innerHTML = capVrai.toFixed(4) + "°";
+        document.getElementById("differenceAzimut").innerHTML =
+            (diff >= 0 ? "+" : "") + diff.toFixed(4) + "°";
+        document.getElementById("compassValues").style.display = "block";
+        document.getElementById("differenceValue").style.display = "block";
+    }
 }
 
 
@@ -1769,6 +1875,11 @@ function resetCarte() {
             rapporteur
         );
 
+    if (ligneVisee) {
+        map.removeLayer(ligneVisee);
+        ligneVisee = null;
+    }
+
 
     A = null;
     B = null;
@@ -1777,12 +1888,19 @@ function resetCarte() {
     markerB = null;
     ligne = null;
     rapporteur = null;
+    ligneVisee = null;
+    viseeVerrouillee = false;
 
 
     document.getElementById(
         "azimut"
     ).innerHTML =
         "—";
+
+    document.getElementById("azimutBoussole").innerHTML = "—";
+    document.getElementById("differenceAzimut").innerHTML = "—";
+    document.getElementById("compassValues").style.display = "none";
+    document.getElementById("differenceValue").style.display = "none";
 
 
     document.getElementById(
