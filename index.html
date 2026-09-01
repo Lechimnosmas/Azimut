@@ -466,6 +466,8 @@ let ligneVisee = null;
 let viseeVerrouillee = false;
 let azimutViseeMagnetique = null;
 let azimutViseeGeographique = null;
+let azimutVerrouilleBoussole = null;
+let differenceVerrouillee = null;
 
 function normaliserAngle(angle) {
     return (angle % 360 + 360) % 360;
@@ -539,7 +541,10 @@ function mettreAJourLigneVisee() {
     if (!boussoleActive || A === null || capVrai === null) return;
     if (viseeVerrouillee) return;
 
-    const distance = Math.max(calculerRayon() * 1.35, 100);
+    // Une très longue ligne est volontairement utilisée : Leaflet la
+    // découpe à la limite visible de la carte. Elle atteint donc toujours
+    // le bord de la carte, quelle que soit la direction visée.
+    const distance = 1000000;
     const fin = destination(A, capVrai, distance);
 
     if (!ligneVisee) {
@@ -571,7 +576,19 @@ function mettreAJourLigneVisee() {
 function verrouillerVisee() {
     if (!boussoleActive || !ligneVisee || capVrai === null) return;
 
-    viseeVerrouillee = !viseeVerrouillee;
+    // VERROUILLAGE RÉEL : on mémorise les valeurs utilisées par tous
+    // les affichages. Les futures rotations de l'iPhone ne les modifient plus.
+    if (!viseeVerrouillee) {
+        azimutVerrouilleBoussole = capVrai;
+        differenceVerrouillee = (A && B)
+            ? angleSigne(capVrai - calculerAzimutValeur(A, B))
+            : null;
+        viseeVerrouillee = true;
+    } else {
+        viseeVerrouillee = false;
+        azimutVerrouilleBoussole = null;
+        differenceVerrouillee = null;
+    }
 
     const btn = document.getElementById("lockButton");
     if (btn) {
@@ -580,13 +597,31 @@ function verrouillerVisee() {
     }
 
     const vr = document.getElementById("viseeReadout");
-    if (vr && viseeVerrouillee) vr.innerHTML += "<br><b>🔒 Visée verrouillée</b>";
+    if (vr) {
+        if (viseeVerrouillee) {
+            vr.innerHTML = `Visée&nbsp; ${azimutVerrouilleBoussole.toFixed(1)}° vrai<br>` +
+                `<b>🔒 Visée verrouillée</b>`;
+        } else {
+            mettreAJourLigneVisee();
+        }
+    }
+
+    // Affichage immédiat des valeurs verrouillées.
+    if (viseeVerrouillee && azimutVerrouilleBoussole !== null) {
+        document.getElementById("azimutBoussole").innerHTML = azimutVerrouilleBoussole.toFixed(4) + "°";
+        document.getElementById("differenceAzimut").innerHTML =
+            differenceVerrouillee === null ? "—" :
+            (differenceVerrouillee >= 0 ? "+" : "") + differenceVerrouillee.toFixed(4) + "°";
+        document.getElementById("direction").innerHTML = directionDepuisAzimut(azimutVerrouilleBoussole);
+    }
 }
 
 async function activerBoussole() {
     if (boussoleActive) {
         boussoleActive = false;
         viseeVerrouillee = false;
+        azimutVerrouilleBoussole = null;
+        differenceVerrouillee = null;
         if (ligneVisee) { map.removeLayer(ligneVisee); ligneVisee = null; }
         azimutViseeMagnetique = null;
         azimutViseeGeographique = null;
@@ -622,6 +657,8 @@ async function activerBoussole() {
 
         boussoleActive = true;
         viseeVerrouillee = false;
+        azimutVerrouilleBoussole = null;
+        differenceVerrouillee = null;
         const lock = document.getElementById("lockButton");
         if (lock) {
             lock.style.display = "inline-block";
@@ -661,30 +698,29 @@ function gererOrientation(event) {
         capVrai = null;
     }
 
-    afficherEtatBoussole();
-
+    // Une fois verrouillée, la valeur de l'iPhone est volontairement ignorée.
+    // La ligne, l'azimut boussole et la différence restent figés.
     if (A && capVrai !== null) {
-        if (!viseeVerrouillee) mettreAJourLigneVisee();
+        if (!viseeVerrouillee) {
+            mettreAJourLigneVisee();
 
-        // L'azimut carte reste la référence A → B.
-        // L'azimut boussole est toujours corrigé par la déclinaison magnétique.
-        const azimutCarte = calculerAzimutValeur(A, B);
-        const difference = azimutCarte === null ? null : angleSigne(capVrai - azimutCarte);
+            const azimutCarte = calculerAzimutValeur(A, B);
+            const difference = azimutCarte === null ? null : angleSigne(capVrai - azimutCarte);
 
-        document.getElementById("azimutBoussole").innerHTML =
-            capVrai.toFixed(4) + "°";
-        document.getElementById("differenceAzimut").innerHTML =
-            difference === null ? "—" : (difference >= 0 ? "+" : "") + difference.toFixed(4) + "°";
+            document.getElementById("azimutBoussole").innerHTML = capVrai.toFixed(4) + "°";
+            document.getElementById("differenceAzimut").innerHTML =
+                difference === null ? "—" : (difference >= 0 ? "+" : "") + difference.toFixed(4) + "°";
+            document.getElementById("direction").innerHTML = directionDepuisAzimut(capVrai);
+        }
 
         document.getElementById("compassValues").style.display = "block";
         document.getElementById("differenceValue").style.display = "block";
 
-        // En mode suivi, la direction affichée correspond à la visée de l'iPhone.
-        document.getElementById("direction").innerHTML = directionDepuisAzimut(capVrai);
-
         const lock = document.getElementById("lockButton");
         if (lock) lock.style.display = "inline-block";
     }
+
+    afficherEtatBoussole();
 }
 
 function directionDepuisAzimut(azimut) {
@@ -1890,6 +1926,8 @@ function resetCarte() {
     rapporteur = null;
     ligneVisee = null;
     viseeVerrouillee = false;
+    azimutVerrouilleBoussole = null;
+    differenceVerrouillee = null;
 
 
     document.getElementById(
