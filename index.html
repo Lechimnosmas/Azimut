@@ -560,17 +560,11 @@ function mettreAJourLigneVisee() {
     azimutViseeGeographique = capVrai;
 
     const diff = declinaison === null ? null : declinaison;
-    let vr = document.getElementById("viseeReadout");
-    if (!vr) {
-        vr = document.createElement("div");
-        vr.id = "viseeReadout";
-        vr.className = "visee-readout";
-        document.getElementById("lockButton")?.parentElement?.appendChild(vr);
-    }
-    vr.innerHTML =
-        `Visée&nbsp; ${capVrai.toFixed(1)}° vrai<br>` +
-        `Boussole&nbsp; ${capMagnetique.toFixed(1)}°` +
-        (diff === null ? "" : ` · Diff. ${diff >= 0 ? "+" : ""}${diff.toFixed(1)}°`);
+    // Les anciennes petites indications « Visée » et « Boussole »
+    // en bas du panneau ont été retirées : les valeurs sont déjà
+    // affichées dans les champs principaux.
+    const vr = document.getElementById("viseeReadout");
+    if (vr) vr.remove();
 }
 
 function verrouillerVisee() {
@@ -596,15 +590,10 @@ function verrouillerVisee() {
         btn.innerHTML = viseeVerrouillee ? "🔓 Déverrouiller la visée" : "🔒 Verrouiller la visée";
     }
 
+    // Aucun affichage secondaire en bas du panneau : les valeurs
+    // verrouillées restent visibles dans les champs principaux.
     const vr = document.getElementById("viseeReadout");
-    if (vr) {
-        if (viseeVerrouillee) {
-            vr.innerHTML = `Visée&nbsp; ${azimutVerrouilleBoussole.toFixed(1)}° vrai<br>` +
-                `<b>🔒 Visée verrouillée</b>`;
-        } else {
-            mettreAJourLigneVisee();
-        }
-    }
+    if (vr) vr.remove();
 
     // Affichage immédiat des valeurs verrouillées.
     if (viseeVerrouillee && azimutVerrouilleBoussole !== null) {
