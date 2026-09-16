@@ -234,6 +234,59 @@ button:hover {
    LIGNE DE VISÉE — la carte reste toujours fixe
    ========================================================= */
 
+
+/* =========================================================
+   V5.13 — MODE AR / AZIMUT + ZOOM 1× / 2× / 4× + DIAGNOSTIC + NIVEAU
+   ========================================================= */
+#arView {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 10000;
+    display: none;
+    overflow: hidden;
+}
+#arView.active { display:block; }
+#arVideo {
+    position:absolute;
+    inset:0;
+    width:100%; height:100%;
+    object-fit:cover;
+    background:#000;
+    transform:scale(var(--ar-camera-zoom, 1));
+    transform-origin:center center;
+    transition:transform .12s ease-out;
+    will-change:transform;
+}
+#arHud { position:absolute; z-index:10001; inset:0; pointer-events:none; color:white; font-family:Arial,sans-serif; text-shadow:0 1px 4px #000; }
+#arTop { position:absolute; z-index:10003; top:env(safe-area-inset-top,12px); left:12px; right:12px; display:flex; justify-content:space-between; align-items:center; pointer-events:auto; }
+#arClose, #arLock { position:relative; z-index:10004; pointer-events:auto; margin:0; background:rgba(0,0,0,.65); border:1px solid rgba(255,255,255,.65); }
+#arZoomControls { position:absolute; z-index:10004; top:calc(env(safe-area-inset-top, 12px) + 54px); left:50%; transform:translateX(-50%); display:flex; gap:6px; pointer-events:auto; background:rgba(0,0,0,.48); padding:5px; border-radius:10px; }
+#arZoomControls button { margin:0; min-width:48px; padding:7px 10px; background:rgba(0,0,0,.68); color:#fff; border:1px solid rgba(255,255,255,.58); border-radius:7px; font-weight:bold; }
+#arZoomControls button.active { background:rgba(255,255,255,.92); color:#000; }
+#arCompass { position:absolute; top:25%; left:0; right:0; height:90px; overflow:hidden; }
+#arScale { position:absolute; left:50%; top:0; display:flex; align-items:flex-start; white-space:nowrap; font-size:18px; font-weight:bold; transition:transform .08s linear; will-change:transform; }
+.arTick { flex:0 0 var(--ar-tick-width, 40px); width:var(--ar-tick-width, 40px); min-width:var(--ar-tick-width, 40px); box-sizing:border-box; text-align:center; vertical-align:top; }
+.arTick.major { flex-basis:var(--ar-tick-width, 40px); width:var(--ar-tick-width, 40px); min-width:var(--ar-tick-width, 40px); font-size:20px; }
+#arCenter { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10002; }
+#arAlignVertical, #arAlignHorizontal { position:absolute; background:rgba(0,255,0,.92); transition:background .12s ease; box-shadow:0 0 2px rgba(0,0,0,.8); }
+#arAlignVertical { top:0; bottom:0; left:50%; width:1px; transform:translateX(-50%); }
+#arAlignHorizontal { left:0; right:0; top:40%; height:1px; transform:translateY(-50%); }
+#arAlignSquare { position:absolute; width:40px; height:40px; left:50%; top:40%; transform:translate(-50%,-50%); box-sizing:border-box; border:2px solid #00ff00; background:transparent; transition:border-color .12s ease, box-shadow .12s ease; box-shadow:0 0 3px rgba(0,0,0,.8); }
+#arAlignInfo { position:absolute; left:50%; top:calc(40% + 27px); transform:translateX(-50%); color:#00ff00; font-size:13px; font-weight:bold; white-space:nowrap; text-shadow:0 1px 3px #000; transition:color .12s ease; }
+#arReport { position:absolute; left:50%; bottom:calc(70px + env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:10004; pointer-events:auto; }
+#arReadout { position:absolute; left:12px; right:12px; bottom:calc(18px + env(safe-area-inset-bottom)); text-align:center; font-size:17px; font-weight:bold; line-height:1.55; }
+#arReport { position:absolute; left:50%; bottom:calc(72px + env(safe-area-inset-bottom)); transform:translateX(-50%); pointer-events:auto; background:rgba(0,0,0,.72); color:white; border:1px solid rgba(255,255,255,.7); border-radius:8px; padding:9px 14px; font-size:15px; }
+#arReport:disabled { opacity:.45; }
+#arLockedSight { position:absolute; top:40%; left:50%; width:3px; height:60%; background:rgba(0,170,255,.95); transform:translateX(-50%); display:none; z-index:10002; box-shadow:0 0 6px rgba(0,170,255,.8); }
+#arLockedLabel { position:absolute; top:calc(40% + 8px); left:50%; transform:translateX(-50%); color:#00aaff; font-weight:bold; white-space:nowrap; display:none; z-index:10002; }
+#arReference { position:absolute; z-index:10002; top:40%; left:0; right:0; height:2px; background:rgba(255,0,0,.9); transform-origin:center; display:none; }
+#arReferenceLabel { position:absolute; z-index:10002; top:calc(40% - 25px); left:50%; transform:translateX(-50%); color:#ff4444; font-weight:bold; white-space:nowrap; display:none; }
+#arStatus { position:absolute; top:calc(25% + 105px); left:0; right:0; text-align:center; font-size:14px; }
+#arDiagnostic { position:absolute; left:10px; right:10px; top:calc(env(safe-area-inset-top, 12px) + 105px); max-height:52vh; overflow:auto; z-index:10006; display:none; background:rgba(0,0,0,.88); color:#fff; border:1px solid rgba(255,255,255,.7); border-radius:10px; padding:12px; font:12px/1.45 monospace; pointer-events:auto; white-space:pre-wrap; }
+#arDiagnostic.active { display:block; }
+#arDiagClose { float:right; margin:0 0 8px 8px; background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.7); border-radius:6px; padding:4px 8px; }
+
 </style>
 
 </head>
@@ -266,6 +319,11 @@ Recherche de votre position GPS...
 <div id="differenceValue" style="display:none;">
 <div class="label">Différence</div>
 <div class="value" id="differenceAzimut">—</div>
+</div>
+
+<div id="azimutARValueBlock" style="display:none;">
+<div class="label">Visée AR mémorisée</div>
+<div class="value" id="azimutARValue">—</div>
 </div>
 
 <div>
@@ -308,8 +366,45 @@ Recherche de votre position GPS...
 🔒 Verrouiller la visée
 </button>
 
+<button onclick="ouvrirAR()">📷 AR + Azimut</button>
+
+<button id="arReportMapButton" onclick="reporterAzimutARSurCarte()" style="display:none;">🗺️ Reporter la visée AR sur la carte</button>
+
 </div>
 
+
+
+<div id="arView" aria-hidden="true">
+  <video id="arVideo" autoplay playsinline muted></video>
+  <div id="arHud">
+    <div id="arTop">
+      <button type="button" id="arClose" onclick="fermerAR()">✕ Fermer</button>
+      <div style="display:flex;gap:6px;align-items:center;pointer-events:auto;">
+        <button type="button" id="arDiagButton" onclick="afficherDiagnosticAR()">🔍 Diagnostic</button>
+        <button type="button" id="arLock" onclick="verrouillerAR()">🔒 Verrouiller la visée AR</button>
+      </div>
+    </div>
+    <div id="arZoomControls" aria-label="Zoom AR">
+      <button type="button" id="arZoom1" class="active" onclick="reglerZoomAR(1)">1×</button>
+      <button type="button" id="arZoom2" onclick="reglerZoomAR(2)">2×</button>
+      <button type="button" id="arZoom4" onclick="reglerZoomAR(4)">4×</button>
+    </div>
+    <div id="arCompass"><div id="arScale"></div></div>
+    <div id="arCenter" aria-label="Niveau d'alignement">
+      <div id="arAlignVertical"></div>
+      <div id="arAlignHorizontal"></div>
+      <div id="arAlignSquare"></div>
+      <div id="arAlignInfo">AP 0.0° · G/D 0.0°</div>
+    </div>
+    <div id="arLockedSight"></div><div id="arLockedLabel"></div>
+    <div id="arReference"></div><div id="arReferenceLabel"></div>
+    <div id="arStatus">Initialisation de la caméra et de la boussole…</div>
+    <div id="arDiagnostic"><button type="button" id="arDiagClose" onclick="fermerDiagnosticAR()">✕</button><b>DIAGNOSTIC AR V5.13</b>
+<div id="arDiagnosticContent">Lecture…</div></div>
+    <div id="arReadout">Azimut : —</div>
+    <button type="button" id="arReport" onclick="reporterAzimutARSurCarte(); fermerAR();" disabled>🗺️ Reporter sur la carte</button>
+  </div>
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -468,6 +563,10 @@ let azimutViseeMagnetique = null;
 let azimutViseeGeographique = null;
 let azimutVerrouilleBoussole = null;
 let differenceVerrouillee = null;
+
+// Azimut mémorisé indépendamment par le mode AR.
+let azimutARMemorise = null;
+let ligneViseeAR = null;
 
 function normaliserAngle(angle) {
     return (angle % 360 + 360) % 360;
@@ -1868,12 +1967,51 @@ function calculerAzimut(
         document.getElementById("compassValues").style.display = "block";
         document.getElementById("differenceValue").style.display = "block";
     }
+
+    // Si l'AR est ouverte, la cible GPS A→B suit les nouveaux points A/B.
+    // Le verrouillage AR, lui, conserve la position visuelle mémorisée.
+    if (typeof arActive !== "undefined" && arActive && !arVerrouille) {
+        arAzimutCarte = azimut;
+        mettreAJourCibleAR();
+        afficherLectureAR();
+    }
 }
 
 
 /* =========================================================
    RÉINITIALISATION
    ========================================================= */
+
+function reporterAzimutARSurCarte() {
+    if (azimutARMemorise === null) {
+        alert("Aucune visée AR n’est mémorisée. Verrouillez d’abord une visée dans le mode AR.");
+        return;
+    }
+    if (!A) {
+        alert("Définissez d’abord le point A pour afficher la visée AR sur la carte.");
+        return;
+    }
+
+    const distance = 1000000;
+    const fin = destination(A, azimutARMemorise, distance);
+
+    if (ligneViseeAR) {
+        map.removeLayer(ligneViseeAR);
+    }
+    ligneViseeAR = L.polyline(
+        [A, fin],
+        { color: "#0066ff", weight: 5, opacity: 0.95, dashArray: "12 8", interactive: false }
+    ).addTo(map);
+
+    const el = document.getElementById("azimutARValue");
+    if (el) el.innerHTML = azimutARMemorise.toFixed(4) + "°";
+    const block = document.getElementById("azimutARValueBlock");
+    if (block) block.style.display = "block";
+    const mapBtn = document.getElementById("arReportMapButton");
+    if (mapBtn) mapBtn.style.display = "none";
+
+    map.setView(A, map.getZoom());
+}
 
 function resetCarte() {
 
@@ -1904,6 +2042,11 @@ function resetCarte() {
         map.removeLayer(ligneVisee);
         ligneVisee = null;
     }
+    if (ligneViseeAR) {
+        map.removeLayer(ligneViseeAR);
+        ligneViseeAR = null;
+    }
+    azimutARMemorise = null;
 
 
     A = null;
@@ -1925,6 +2068,12 @@ function resetCarte() {
         "—";
 
     document.getElementById("azimutBoussole").innerHTML = "—";
+    const arBlock = document.getElementById("azimutARValueBlock");
+    if (arBlock) arBlock.style.display = "none";
+    const arVal = document.getElementById("azimutARValue");
+    if (arVal) arVal.innerHTML = "—";
+    const mapBtn = document.getElementById("arReportMapButton");
+    if (mapBtn) mapBtn.style.display = "none";
     document.getElementById("differenceAzimut").innerHTML = "—";
     document.getElementById("compassValues").style.display = "none";
     document.getElementById("differenceValue").style.display = "none";
@@ -1958,6 +2107,635 @@ function resetCarte() {
         "message"
     ).innerHTML =
         "🔵 Position GPS conservée. Cliquez sur la carte pour placer le <b>point A</b>.";
+}
+
+
+
+/* =========================================================
+   V5 — MODE AR + AZIMUT
+   AR = cible GPS A→B + orientation iPhone uniquement pour
+   positionner cette cible dans le champ de caméra.
+   ========================================================= */
+let arStream = null;
+let arActive = false;
+let arVerrouille = false;
+let arCapVrai = null;
+let arAzimutCarte = null;
+let arPositionCiblePct = 50;
+let arPositionVerrouilleePct = null;
+let arDifference = null;
+let arZoom = 1;
+let arInclinaisonAP = null;
+let arInclinaisonLat = null;
+const AR_TOLERANCE_NIVEAU = 1.0;
+
+// Champ de vision horizontal de travail. Il sert uniquement à transformer
+// l'écart angulaire en position visuelle dans l'image AR.
+const AR_FOV_HORIZONTAL = 60;
+
+function azimutCarteAR() {
+    return (A && B) ? calculerAzimutValeur(A, B) : null;
+}
+
+function champVisionAREffectif() {
+    return AR_FOV_HORIZONTAL / arZoom;
+}
+
+function reglerZoomAR(niveau) {
+    if (![1, 2, 4].includes(niveau)) return;
+    arZoom = niveau;
+
+    const video = document.getElementById("arVideo");
+    if (video) video.style.setProperty("--ar-camera-zoom", arZoom);
+    appliquerZoomCameraAR(niveau);
+
+    const scale = document.getElementById("arScale");
+    if (scale) scale.style.setProperty("--ar-tick-width", `${40 * arZoom}px`);
+
+    [1, 2, 4].forEach(z => {
+        const b = document.getElementById(`arZoom${z}`);
+        if (b) b.classList.toggle("active", z === arZoom);
+    });
+
+    // Le zoom resserre le champ visuel mais ne change jamais l'azimut.
+    mettreAJourEchelleAR();
+    if (arAzimutCarte !== null && arCapVrai !== null) {
+        const ecart = angleSigne(arAzimutCarte - arCapVrai);
+        arPositionCiblePct = 50 + (ecart / champVisionAREffectif()) * 100;
+        afficherPositionCibleAR();
+    }
+    mettreAJourViséeVerrouilleeAR();
+}
+
+
+async function obtenirCamerasArriereAR() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return [];
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        return devices.filter(d => d.kind === "videoinput");
+    } catch (e) {
+        console.log("Impossible d’énumérer les caméras AR :", e);
+        return [];
+    }
+}
+
+function estTeleobjectifAR(device) {
+    const label = (device.label || "").toLowerCase();
+    return /telephoto|teleobjectif|tele\b|tele camera|back tele/.test(label);
+}
+
+function estUltraGrandAngleAR(device) {
+    const label = (device.label || "").toLowerCase();
+    return /ultra.?wide|ultra.?grand|ultra.?large/.test(label);
+}
+
+async function ouvrirFluxCameraAR(constraintsVideo) {
+    if (arStream) {
+        arStream.getTracks().forEach(t => t.stop());
+        arStream = null;
+    }
+    arStream = await navigator.mediaDevices.getUserMedia({
+        video: constraintsVideo,
+        audio: false
+    });
+    const video = document.getElementById("arVideo");
+    if (video) {
+        video.srcObject = arStream;
+        try { await video.play(); } catch (e) {}
+    }
+}
+
+async function choisirCameraPourZoomAR(niveau) {
+    // Safari/iOS ne garantit pas un contrôle direct de l'objectif par
+    // getUserMedia. Après autorisation, enumerateDevices() peut toutefois
+    // exposer séparément la caméra téléobjectif. On l'utilise explicitement
+    // lorsque son nom est disponible.
+    if (niveau === 1) {
+        await ouvrirFluxCameraAR({ facingMode: { ideal: "environment" } });
+        return { camera: "principale", optique: false };
+    }
+
+    const cameras = await obtenirCamerasArriereAR();
+    const arrieres = cameras.filter(d => {
+        const label = (d.label || "").toLowerCase();
+        return /back|rear|arrière|arriere|environment|dos/.test(label);
+    });
+
+    const tele = arrieres.find(estTeleobjectifAR);
+
+    if (tele && tele.deviceId) {
+        try {
+            await ouvrirFluxCameraAR({ deviceId: { exact: tele.deviceId } });
+            return { camera: tele.label || "téléobjectif", optique: true };
+        } catch (e) {
+            console.log("Téléobjectif refusé par Safari/iOS :", e);
+        }
+    }
+
+    // Si le téléobjectif n'est pas exposé, on reste sur la caméra arrière
+    // principale. Le niveau demandé sera alors complété par le zoom CSS.
+    await ouvrirFluxCameraAR({ facingMode: { ideal: "environment" } });
+    return { camera: "principale", optique: false };
+}
+
+async function appliquerZoomCameraAR(niveau) {
+    if (!arActive || !arStream) return;
+
+    try {
+        const resultat = await choisirCameraPourZoomAR(niveau);
+        const video = document.getElementById("arVideo");
+
+        // Le CSS complète le grossissement lorsque l'objectif télé n'est pas
+        // exposé par Safari, ou pour atteindre 4×.
+        let zoomCSS = 1;
+        if (niveau === 2) zoomCSS = resultat.optique ? 1 : 2;
+        if (niveau === 4) zoomCSS = resultat.optique ? 2 : 4;
+        if (video) video.style.setProperty("--ar-camera-zoom", zoomCSS);
+
+        // Si le flux sélectionné expose lui-même une capacité zoom, on peut
+        // l'utiliser pour compléter le niveau demandé sans changer l'azimut.
+        const track = arStream.getVideoTracks && arStream.getVideoTracks()[0];
+        let zoomMateriel = false;
+        if (track && track.getCapabilities && track.applyConstraints) {
+            const caps = track.getCapabilities();
+            if (caps && caps.zoom && typeof caps.zoom === "object") {
+                const min = typeof caps.zoom.min === "number" ? caps.zoom.min : 1;
+                const max = typeof caps.zoom.max === "number" ? caps.zoom.max : 1;
+                const step = typeof caps.zoom.step === "number" && caps.zoom.step > 0 ? caps.zoom.step : null;
+                let z = Math.max(min, Math.min(max, niveau));
+                if (step) z = min + Math.round((z - min) / step) * step;
+                z = Math.max(min, Math.min(max, z));
+                if (z > 1) {
+                    await track.applyConstraints({ advanced: [{ zoom: z }] });
+                    zoomMateriel = true;
+                    if (video) video.style.setProperty("--ar-camera-zoom", 1);
+                }
+            }
+        }
+
+        const st = document.getElementById("arStatus");
+        if (st && arActive) {
+            if (niveau === 1) {
+                st.textContent = "Visée AR en direct — caméra principale 1×";
+            } else if (resultat.optique) {
+                st.textContent = niveau === 2
+                    ? "Visée AR — téléobjectif 2×"
+                    : "Visée AR — téléobjectif + zoom 4×";
+            } else if (zoomMateriel) {
+                st.textContent = `Visée AR — zoom caméra ${niveau}×`;
+            } else {
+                st.textContent = `Visée AR — zoom numérique ${niveau}× (téléobjectif non exposé)`;
+            }
+        }
+    } catch (e) {
+        console.log("Sélection/zoom caméra AR non disponible :", e);
+        const video = document.getElementById("arVideo");
+        if (video) video.style.setProperty("--ar-camera-zoom", niveau);
+    }
+}
+
+function construireEchelleAR() {
+    const scale = document.getElementById("arScale");
+    if (!scale) return;
+    let h = "";
+    // Une graduation tous les 10°. Espacement constant afin que l'échelle
+    // puisse défiler exactement avec l'azimut de l'iPhone.
+    for (let a = -720; a <= 720; a += 10) {
+        const n = normaliserAngle(a);
+        let label = n + "°";
+        if (n === 0) label = "N";
+        else if (n === 90) label = "E";
+        else if (n === 180) label = "S";
+        else if (n === 270) label = "O";
+        const major = n % 30 === 0;
+        h += `<span class="arTick ${major ? 'major' : ''}">${label}</span>`;
+    }
+    scale.innerHTML = h;
+}
+
+function mettreAJourEchelleAR() {
+    const scale = document.getElementById("arScale");
+    if (!scale || arCapVrai === null) return;
+    // Le centre bleu représente le cap actuel. L'échelle défile donc
+    // sous ce repère : N/E/S/O se déplacent réellement lorsque l'iPhone tourne.
+    const pixelsParDegre = (40 * arZoom) / 10;
+    // Échelle symétrique : -720° ... 0° ... +720°.
+    // Le 0° est exactement au centre de l'échelle.
+    // Quand le cap augmente vers l'Est, l'échelle se déplace vers la gauche
+    // afin que la graduation correspondant au cap arrive sous le repère bleu.
+    const heading = normaliserAngle(arCapVrai);
+    const offset = -heading * pixelsParDegre;
+    scale.style.transform = `translateX(calc(-50% + ${offset}px))`;
+}
+
+function mettreAJourCibleAR() {
+    const cible = azimutCarteAR();
+    arAzimutCarte = cible === null ? null : normaliserAngle(cible);
+
+    const label = document.getElementById("arReferenceLabel");
+    const line = document.getElementById("arReference");
+
+    if (arAzimutCarte === null) {
+        if (line) line.style.display = "none";
+        if (label) label.style.display = "none";
+        const readout = document.getElementById("arReadout");
+        if (readout) readout.innerHTML = "Azimut carte : —<br><small>Définissez A et B pour afficher la visée GPS.</small>";
+        return;
+    }
+
+    if (line) line.style.display = "block";
+    if (label) {
+        label.style.display = "block";
+        label.textContent = `🔴 A → B : ${arAzimutCarte.toFixed(1)}°`;
+    }
+
+    afficherPositionCibleAR();
+}
+
+function afficherPositionCibleAR() {
+    const line = document.getElementById("arReference");
+    const label = document.getElementById("arReferenceLabel");
+    if (!line || !label || arAzimutCarte === null) return;
+
+    // La référence rouge A→B reste indépendante du verrouillage de la visée AR.
+    const position = arPositionCiblePct;
+
+    const visible = position >= -5 && position <= 105;
+    line.style.display = visible ? "block" : "none";
+    label.style.display = visible ? "block" : "none";
+
+    if (visible) {
+        line.style.left = `${position}%`;
+        line.style.right = "auto";
+        label.style.left = `${position}%`;
+        label.style.transform = "translateX(-50%)";
+    }
+}
+
+function mettreAJourViséeVerrouilleeAR() {
+    const line = document.getElementById("arLockedSight");
+    const label = document.getElementById("arLockedLabel");
+    if (!line || !label) return;
+
+    if (!arVerrouille || azimutARMemorise === null || arCapVrai === null) {
+        line.style.display = "none";
+        label.style.display = "none";
+        return;
+    }
+
+    const ecart = angleSigne(azimutARMemorise - arCapVrai);
+    const position = 50 + (ecart / champVisionAREffectif()) * 100;
+    const visible = position >= -5 && position <= 105;
+    line.style.display = visible ? "block" : "none";
+    label.style.display = visible ? "block" : "none";
+    if (visible) {
+        line.style.left = `${position}%`;
+        label.style.left = `${position}%`;
+        label.textContent = `🔵 Visée : ${azimutARMemorise.toFixed(1)}°`;
+    }
+}
+
+function obtenirInclinaisonsAR(event) {
+    // On ramène beta/gamma aux axes de l'écran, afin que le test reste
+    // cohérent en portrait comme en paysage.
+    if (typeof event.beta !== "number" || typeof event.gamma !== "number") {
+        arInclinaisonAP = null;
+        arInclinaisonLat = null;
+        return;
+    }
+
+    let orientation = 0;
+    if (screen.orientation && typeof screen.orientation.angle === "number") {
+        orientation = ((screen.orientation.angle % 360) + 360) % 360;
+    } else if (typeof window.orientation === "number") {
+        orientation = ((window.orientation % 360) + 360) % 360;
+    }
+
+    const beta = event.beta;
+    const gamma = event.gamma;
+    if (orientation === 90) {
+        arInclinaisonAP = gamma;
+        arInclinaisonLat = -beta;
+    } else if (orientation === 180) {
+        arInclinaisonAP = -beta;
+        arInclinaisonLat = -gamma;
+    } else if (orientation === 270) {
+        arInclinaisonAP = -gamma;
+        arInclinaisonLat = beta;
+    } else {
+        arInclinaisonAP = beta;
+        arInclinaisonLat = gamma;
+    }
+
+    mettreAJourNiveauAR();
+}
+
+function mettreAJourNiveauAR() {
+    const v = document.getElementById("arAlignVertical");
+    const h = document.getElementById("arAlignHorizontal");
+    const square = document.getElementById("arAlignSquare");
+    const info = document.getElementById("arAlignInfo");
+    if (!v || !h || !square || !info) return;
+
+    if (arInclinaisonAP === null || arInclinaisonLat === null) {
+        const c = "#ff3333";
+        v.style.background = c; h.style.background = c; square.style.borderColor = c; info.style.color = c;
+        info.textContent = "Niveau indisponible";
+        return;
+    }
+
+    const apOK = Math.abs(arInclinaisonAP) <= AR_TOLERANCE_NIVEAU;
+    const latOK = Math.abs(arInclinaisonLat) <= AR_TOLERANCE_NIVEAU;
+    const ok = apOK && latOK;
+    const couleur = ok ? "#00ff00" : "#ff3333";
+
+    v.style.background = couleur;
+    h.style.background = couleur;
+    square.style.borderColor = couleur;
+    info.style.color = couleur;
+    info.textContent = `AP ${arInclinaisonAP >= 0 ? "+" : ""}${arInclinaisonAP.toFixed(1)}° · G/D ${arInclinaisonLat >= 0 ? "+" : ""}${arInclinaisonLat.toFixed(1)}°`;
+}
+
+function afficherLectureAR() {
+    const readout = document.getElementById("arReadout");
+    if (!readout) return;
+
+    let txt = `Azimut carte A → B : ${arAzimutCarte === null ? "—" : arAzimutCarte.toFixed(1) + "°"}`;
+    if (arCapVrai !== null) {
+        txt += `<br>Azimut boussole : ${arCapVrai.toFixed(1)}°`;
+    }
+    if (arAzimutCarte !== null && arCapVrai !== null) {
+        arDifference = angleSigne(arCapVrai - arAzimutCarte);
+        txt += `<br>Différence : ${arDifference >= 0 ? "+" : ""}${arDifference.toFixed(1)}°`;
+    }
+    if (arVerrouille && azimutARMemorise !== null) {
+        txt += `<br><span style="color:#4da6ff">🔵 Visée AR mémorisée : ${azimutARMemorise.toFixed(1)}°</span>`;
+    }
+    readout.innerHTML = txt;
+}
+
+function gererOrientationAR(event) {
+    if (!arActive) return;
+
+    let heading = event.webkitCompassHeading;
+    if (typeof heading !== "number" || heading < 0) {
+        if (event.absolute && typeof event.alpha === "number") {
+            heading = normaliserAngle(360 - event.alpha);
+        } else {
+            return;
+        }
+    }
+
+    const dec = declinaison;
+    if (dec === null || dec === undefined) {
+        const st = document.getElementById("arStatus");
+        if (st) st.textContent = "Calcul de la déclinaison magnétique…";
+        return;
+    }
+
+    arCapVrai = normaliserAngle(heading + dec);
+    obtenirInclinaisonsAR(event);
+    mettreAJourEchelleAR();
+
+    // Référence rouge A→B : toujours indépendante.
+    if (arAzimutCarte !== null) {
+        const ecart = angleSigne(arAzimutCarte - arCapVrai);
+        arPositionCiblePct = 50 + (ecart / champVisionAREffectif()) * 100;
+        afficherPositionCibleAR();
+    }
+
+    // Visée AR bleue : avant verrouillage, elle correspond au centre de visée.
+    // Après verrouillage, elle représente la direction mémorisée et se déplace
+    // dans l'image lorsque l'iPhone tourne.
+    mettreAJourViséeVerrouilleeAR();
+    afficherLectureAR();
+
+    const st = document.getElementById("arStatus");
+    if (st) st.textContent = arVerrouille
+        ? "Visée AR verrouillée — azimut mémorisé"
+        : "Visée AR en direct";
+}
+
+async function afficherDiagnosticAR() {
+    const box = document.getElementById("arDiagnostic");
+    const content = document.getElementById("arDiagnosticContent");
+    if (!box || !content) return;
+    box.classList.add("active");
+
+    const lignes = [];
+    lignes.push("AR actif : " + arActive);
+    lignes.push("Zoom demandé : " + arZoom + "×");
+    lignes.push("FOV calculé : " + champVisionAREffectif().toFixed(1) + "°");
+    lignes.push("");
+
+    const video = document.getElementById("arVideo");
+    if (video) {
+        lignes.push("VIDÉO");
+        lignes.push("  readyState : " + video.readyState);
+        lignes.push("  dimensions vidéo : " + (video.videoWidth || 0) + " × " + (video.videoHeight || 0));
+        lignes.push("  dimensions écran : " + Math.round(video.clientWidth) + " × " + Math.round(video.clientHeight));
+        lignes.push("  zoom CSS : " + (getComputedStyle(video).transform || "aucun"));
+        lignes.push("");
+    }
+
+    const track = arStream && arStream.getVideoTracks ? arStream.getVideoTracks()[0] : null;
+    if (!track) {
+        lignes.push("CAMÉRA");
+        lignes.push("  ❌ Aucun flux vidéo actif");
+    } else {
+        const settings = track.getSettings ? track.getSettings() : {};
+        const caps = track.getCapabilities ? track.getCapabilities() : {};
+        lignes.push("CAMÉRA ACTIVE");
+        lignes.push("  label : " + (track.label || "(aucun label fourni)"));
+        lignes.push("  état : " + track.readyState);
+        lignes.push("  deviceId : " + (settings.deviceId ? settings.deviceId.slice(0, 12) + "…" : "non exposé"));
+        lignes.push("  facingMode : " + (settings.facingMode || "non exposé"));
+        lignes.push("  résolution : " + ((settings.width || "?") + " × " + (settings.height || "?")));
+        lignes.push("  frameRate : " + (settings.frameRate || "non exposé"));
+        lignes.push("  zoom actuel : " + (typeof settings.zoom === "number" ? settings.zoom : "non exposé"));
+        lignes.push("  capacité zoom : " + (caps.zoom ? JSON.stringify(caps.zoom) : "NON EXPOSÉE"));
+        lignes.push("  torch : " + (caps.torch === true ? "oui" : "non exposé"));
+        lignes.push("");
+    }
+
+    lignes.push("CAMÉRAS EXPOSÉES PAR SAFARI");
+    try {
+        const devices = await obtenirCamerasArriereAR();
+        if (!devices.length) {
+            lignes.push("  ❌ Aucune caméra retournée par enumerateDevices()");
+        } else {
+            devices.forEach((d, i) => {
+                lignes.push(`  ${i + 1}. ${d.label || "(label masqué par Safari)"}`);
+                lignes.push("     kind=" + d.kind + " | id=" + (d.deviceId ? d.deviceId.slice(0, 12) + "…" : "non exposé"));
+            });
+        }
+    } catch (e) {
+        lignes.push("  ❌ enumerateDevices : " + e.message);
+    }
+
+    lignes.push("");
+    lignes.push("ORIENTATION / AZIMUT");
+    lignes.push("  azimut vrai actuel : " + (arCapVrai === null ? "—" : arCapVrai.toFixed(1) + "°"));
+    lignes.push("  visée mémorisée : " + (azimutARMemorise === null ? "—" : azimutARMemorise.toFixed(1) + "°"));
+    lignes.push("  déclinaison : " + (declinaison === null ? "—" : declinaison.toFixed(2) + "°"));
+    lignes.push("  inclinaison antéro-postérieure : " + (arInclinaisonAP === null ? "—" : arInclinaisonAP.toFixed(2) + "°"));
+    lignes.push("  inclinaison latérale gauche/droite : " + (arInclinaisonLat === null ? "—" : arInclinaisonLat.toFixed(2) + "°"));
+    lignes.push("  tolérance niveau : ±" + AR_TOLERANCE_NIVEAU.toFixed(1) + "°");
+    lignes.push("");
+    lignes.push("INTERPRÉTATION");
+    if (track) {
+        const caps = track.getCapabilities ? track.getCapabilities() : {};
+        if (caps.zoom) {
+            lignes.push("  ✓ Safari expose une capacité de zoom matériel sur ce flux.");
+        } else {
+            lignes.push("  ⚠ Safari n’expose PAS de capacité de zoom matériel sur ce flux.");
+            lignes.push("  → 2×/4× peuvent donc être du zoom numérique/CSS.");
+        }
+        const label = (track.label || "").toLowerCase();
+        if (/telephoto|teleobjectif|tele\b/.test(label)) {
+            lignes.push("  ✓ Le nom du flux contient une indication de téléobjectif.");
+        } else {
+            lignes.push("  ⚠ Le nom du flux ne permet pas d’identifier un téléobjectif.");
+        }
+    }
+
+    content.textContent = lignes.join("\n");
+    console.log("Diagnostic AR V5.13", lignes.join("\n"));
+}
+
+function fermerDiagnosticAR() {
+    const box = document.getElementById("arDiagnostic");
+    if (box) box.classList.remove("active");
+}
+
+async function ouvrirAR() {
+    if (!window.isSecureContext) {
+        alert("Le mode AR nécessite HTTPS.");
+        return;
+    }
+
+    const view = document.getElementById("arView");
+    const video = document.getElementById("arVideo");
+
+    try {
+        if (typeof DeviceOrientationEvent !== "undefined" &&
+            typeof DeviceOrientationEvent.requestPermission === "function") {
+            const p = await DeviceOrientationEvent.requestPermission(true);
+            if (p !== "granted") throw new Error("Orientation refusée");
+        }
+
+        // Ouvre d'abord la caméra arrière principale pour obtenir les noms
+        // des objectifs auprès de Safari, puis les niveaux 2×/4× peuvent
+        // tenter de sélectionner explicitement le téléobjectif.
+        arStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } },
+            audio: false
+        });
+        video.srcObject = arStream;
+        arActive = true;
+        await appliquerZoomCameraAR(1);
+        arVerrouille = false;
+        arCapVrai = null;
+        arAzimutCarte = azimutCarteAR();
+        arPositionCiblePct = 50;
+        arPositionVerrouilleePct = null;
+        arDifference = null;
+        arZoom = 1;
+
+        construireEchelleAR();
+        reglerZoomAR(1);
+        mettreAJourCibleAR();
+        view.classList.add("active");
+
+        const st = document.getElementById("arStatus");
+        if (st) st.textContent = arAzimutCarte === null
+            ? "Visée AR en direct — A→B optionnel."
+            : "Visée AR en direct — rouge = A→B, bleu = votre direction.";
+        const report = document.getElementById("arReport");
+        if (report) report.disabled = true;
+
+        window.addEventListener("deviceorientation", gererOrientationAR, true);
+        window.addEventListener("deviceorientationabsolute", gererOrientationAR, true);
+
+    } catch (e) {
+        fermerAR();
+        alert("Impossible d’ouvrir le mode AR. Vérifiez les autorisations Caméra et Mouvement et orientation.");
+    }
+}
+
+function verrouillerAR() {
+    if (arCapVrai === null) {
+        alert("L’azimut de la boussole n’est pas encore disponible. Orientez l’iPhone et réessayez.");
+        return;
+    }
+
+    if (!arVerrouille) {
+        // La visée AR mémorise la direction réelle de l’iPhone, indépendamment
+        // de la cible rouge A→B et du verrouillage de la carte.
+        azimutARMemorise = arCapVrai;
+        arVerrouille = true;
+    } else {
+        arVerrouille = false;
+        azimutARMemorise = null;
+    }
+
+    mettreAJourViséeVerrouilleeAR();
+    afficherLectureAR();
+
+    const b = document.getElementById("arLock");
+    if (b) b.textContent = arVerrouille
+        ? "🔓 Déverrouiller la visée AR"
+        : "🔒 Verrouiller la visée AR";
+
+    const report = document.getElementById("arReport");
+    if (report) report.disabled = !arVerrouille;
+    const mapBtn = document.getElementById("arReportMapButton");
+    if (mapBtn) mapBtn.style.display = arVerrouille ? "block" : "none";
+
+    const st = document.getElementById("arStatus");
+    if (st) st.textContent = arVerrouille ? "Visée AR verrouillée — azimut mémorisé" : "Visée AR en direct";
+}
+
+function fermerAR() {
+    fermerDiagnosticAR();
+    arActive = false;
+    arVerrouille = false;
+    arCapVrai = null;
+    arAzimutCarte = null;
+    arPositionCiblePct = 50;
+    arPositionVerrouilleePct = null;
+    arDifference = null;
+    arZoom = 1;
+    arInclinaisonAP = null;
+    arInclinaisonLat = null;
+
+    const zoomVideo = document.getElementById("arVideo");
+    if (zoomVideo) zoomVideo.style.setProperty("--ar-camera-zoom", 1);
+    const zoomScale = document.getElementById("arScale");
+    if (zoomScale) zoomScale.style.setProperty("--ar-tick-width", "40px");
+    [1, 2, 4].forEach(z => {
+        const b = document.getElementById(`arZoom${z}`);
+        if (b) b.classList.toggle("active", z === 1);
+    });
+
+    window.removeEventListener("deviceorientation", gererOrientationAR, true);
+    window.removeEventListener("deviceorientationabsolute", gererOrientationAR, true);
+
+    if (arStream) {
+        arStream.getTracks().forEach(t => t.stop());
+        arStream = null;
+    }
+
+    const video = document.getElementById("arVideo");
+    if (video) video.srcObject = null;
+
+    const lockedLine = document.getElementById("arLockedSight");
+    const lockedLabel = document.getElementById("arLockedLabel");
+    if (lockedLine) lockedLine.style.display = "none";
+    if (lockedLabel) lockedLabel.style.display = "none";
+
+    const view = document.getElementById("arView");
+    if (view) view.classList.remove("active");
 }
 
 
