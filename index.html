@@ -269,9 +269,7 @@ button:hover {
 .arTick { flex:0 0 var(--ar-tick-width, 40px); width:var(--ar-tick-width, 40px); min-width:var(--ar-tick-width, 40px); box-sizing:border-box; text-align:center; vertical-align:top; }
 .arTick.major { flex-basis:var(--ar-tick-width, 40px); width:var(--ar-tick-width, 40px); min-width:var(--ar-tick-width, 40px); font-size:20px; }
 #arCenter { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10002; }
-#arAlignVertical, #arAlignHorizontal { position:absolute; background:rgba(0,255,0,.92); transition:background .12s ease; box-shadow:0 0 2px rgba(0,0,0,.8); }
-#arAlignVertical { top:0; bottom:0; left:50%; width:1px; transform:translateX(-50%); }
-#arAlignHorizontal { left:0; right:0; top:40%; height:1px; transform:translateY(-50%); }
+#arAlignVertical { position:absolute; top:0; bottom:0; left:50%; width:1px; background:rgba(0,255,0,.92); transform:translateX(-50%); transition:background .12s ease; box-shadow:0 0 2px rgba(0,0,0,.8); }
 #arAlignSquare { position:absolute; width:40px; height:40px; left:50%; top:40%; transform:translate(-50%,-50%); box-sizing:border-box; border:2px solid #00ff00; background:transparent; transition:border-color .12s ease, box-shadow .12s ease; box-shadow:0 0 3px rgba(0,0,0,.8); }
 #arAlignInfo { position:absolute; left:50%; top:calc(40% + 27px); transform:translateX(-50%); color:#00ff00; font-size:13px; font-weight:bold; white-space:nowrap; text-shadow:0 1px 3px #000; transition:color .12s ease; }
 #arReport { position:absolute; left:50%; bottom:calc(70px + env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:10004; pointer-events:auto; }
@@ -392,14 +390,13 @@ Recherche de votre position GPS...
     <div id="arCompass"><div id="arScale"></div></div>
     <div id="arCenter" aria-label="Niveau d'alignement">
       <div id="arAlignVertical"></div>
-      <div id="arAlignHorizontal"></div>
       <div id="arAlignSquare"></div>
-      <div id="arAlignInfo">AP 0.0° · G/D 0.0°</div>
+      <div id="arAlignInfo">AP 90.0°</div>
     </div>
     <div id="arLockedSight"></div><div id="arLockedLabel"></div>
     <div id="arReference"></div><div id="arReferenceLabel"></div>
     <div id="arStatus">Initialisation de la caméra et de la boussole…</div>
-    <div id="arDiagnostic"><button type="button" id="arDiagClose" onclick="fermerDiagnosticAR()">✕</button><b>DIAGNOSTIC AR V5.13</b>
+    <div id="arDiagnostic"><button type="button" id="arDiagClose" onclick="fermerDiagnosticAR()">✕</button><b>DIAGNOSTIC AR V5.15</b>
 <div id="arDiagnosticContent">Lecture…</div></div>
     <div id="arReadout">Azimut : —</div>
     <button type="button" id="arReport" onclick="reporterAzimutARSurCarte(); fermerAR();" disabled>🗺️ Reporter sur la carte</button>
@@ -2127,6 +2124,7 @@ let arDifference = null;
 let arZoom = 1;
 let arInclinaisonAP = null;
 let arInclinaisonLat = null;
+// V5.15 : le niveau AR utilise uniquement l'axe antéro-postérieur, cible +90°.
 const AR_TOLERANCE_NIVEAU = 1.0;
 
 // Champ de vision horizontal de travail. Il sert uniquement à transformer
@@ -2432,28 +2430,28 @@ function obtenirInclinaisonsAR(event) {
 
 function mettreAJourNiveauAR() {
     const v = document.getElementById("arAlignVertical");
-    const h = document.getElementById("arAlignHorizontal");
     const square = document.getElementById("arAlignSquare");
     const info = document.getElementById("arAlignInfo");
-    if (!v || !h || !square || !info) return;
+    if (!v || !square || !info) return;
 
-    if (arInclinaisonAP === null || arInclinaisonLat === null) {
+    if (arInclinaisonAP === null) {
         const c = "#ff3333";
-        v.style.background = c; h.style.background = c; square.style.borderColor = c; info.style.color = c;
-        info.textContent = "Niveau indisponible";
+        v.style.background = c;
+        square.style.borderColor = c;
+        info.style.color = c;
+        info.textContent = "AP indisponible";
         return;
     }
 
-    const apOK = Math.abs(arInclinaisonAP) <= AR_TOLERANCE_NIVEAU;
-    const latOK = Math.abs(arInclinaisonLat) <= AR_TOLERANCE_NIVEAU;
-    const ok = apOK && latOK;
-    const couleur = ok ? "#00ff00" : "#ff3333";
+    // Pour une visée horizontale, l'iPhone doit être tenu verticalement :
+    // beta/gamma ramené à l'axe AP doit être proche de +90°.
+    const apOK = Math.abs(arInclinaisonAP - 90) <= AR_TOLERANCE_NIVEAU;
+    const couleur = apOK ? "#00ff00" : "#ff3333";
 
     v.style.background = couleur;
-    h.style.background = couleur;
     square.style.borderColor = couleur;
     info.style.color = couleur;
-    info.textContent = `AP ${arInclinaisonAP >= 0 ? "+" : ""}${arInclinaisonAP.toFixed(1)}° · G/D ${arInclinaisonLat >= 0 ? "+" : ""}${arInclinaisonLat.toFixed(1)}°`;
+    info.textContent = `AP ${arInclinaisonAP >= 0 ? "+" : ""}${arInclinaisonAP.toFixed(1)}°`;
 }
 
 function afficherLectureAR() {
