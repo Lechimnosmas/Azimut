@@ -396,7 +396,7 @@ Recherche de votre position GPS...
     <div id="arLockedSight"></div><div id="arLockedLabel"></div>
     <div id="arReference"></div><div id="arReferenceLabel"></div>
     <div id="arStatus">Initialisation de la caméra et de la boussole…</div>
-    <div id="arDiagnostic"><button type="button" id="arDiagClose" onclick="fermerDiagnosticAR()">✕</button><b>DIAGNOSTIC AR V5.15</b>
+    <div id="arDiagnostic"><button type="button" id="arDiagClose" onclick="fermerDiagnosticAR()">✕</button><b>DIAGNOSTIC AR V5.16</b>
 <div id="arDiagnosticContent">Lecture…</div></div>
     <div id="arReadout">Azimut : —</div>
     <button type="button" id="arReport" onclick="reporterAzimutARSurCarte(); fermerAR();" disabled>🗺️ Reporter sur la carte</button>
@@ -2124,7 +2124,7 @@ let arDifference = null;
 let arZoom = 1;
 let arInclinaisonAP = null;
 let arInclinaisonLat = null;
-// V5.15 : le niveau AR utilise uniquement l'axe antéro-postérieur, cible +90°.
+// V5.16 : le niveau AR utilise uniquement l'axe antéro-postérieur, cible +90°.
 const AR_TOLERANCE_NIVEAU = 1.0;
 
 // Champ de vision horizontal de travail. Il sert uniquement à transformer
@@ -2577,7 +2577,7 @@ async function afficherDiagnosticAR() {
     lignes.push("  visée mémorisée : " + (azimutARMemorise === null ? "—" : azimutARMemorise.toFixed(1) + "°"));
     lignes.push("  déclinaison : " + (declinaison === null ? "—" : declinaison.toFixed(2) + "°"));
     lignes.push("  inclinaison antéro-postérieure : " + (arInclinaisonAP === null ? "—" : arInclinaisonAP.toFixed(2) + "°"));
-    lignes.push("  inclinaison latérale gauche/droite : " + (arInclinaisonLat === null ? "—" : arInclinaisonLat.toFixed(2) + "°"));
+    lignes.push("  inclinaison latérale : " + (arInclinaisonLat === null ? "—" : arInclinaisonLat.toFixed(2) + "°"));
     lignes.push("  tolérance niveau : ±" + AR_TOLERANCE_NIVEAU.toFixed(1) + "°");
     lignes.push("");
     lignes.push("INTERPRÉTATION");
